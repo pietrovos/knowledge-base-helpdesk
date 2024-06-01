@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+*.tsbuildinfo
+
+# Env / local
+.env
+*.local
+.DS_Store

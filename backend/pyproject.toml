@@ -1,0 +1,47 @@
+[project]
+name = "supportlens"
+version = "0.1.0"
+description = "Helpdesk with access-controlled retrieval and cited reply drafts"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic>=2",
+  "pydantic-settings",
+  "sqlalchemy>=2",
+  "psycopg[binary]>=3",
+  "pgvector",
+  "alembic",
+  "celery[redis]",
+  "redis",
+  "boto3",
+  "pyjwt",
+  "argon2-cffi",
+  "python-multipart",
+  "anthropic",
+  "httpx",
+  "email-validator",
+]
+
+[project.optional-dependencies]
+local-embeddings = ["fastembed"]
+voyage = ["voyageai"]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "mypy", "pyyaml"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["integration: needs a real Postgres (and Redis/MinIO where noted)"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]  # line length is left to the formatter

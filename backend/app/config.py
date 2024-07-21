@@ -1,7 +1,11 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+DEV_JWT_SECRET = "dev-only-insecure-secret-change-me-in-prod"
 
 
 class Settings(BaseSettings):
@@ -20,7 +24,7 @@ class Settings(BaseSettings):
     s3_secret_key: str | None = "supportlens-secret"
 
     # Auth
-    jwt_secret: str = "dev-only-change-me"
+    jwt_secret: str = DEV_JWT_SECRET
     jwt_ttl_minutes: int = 60 * 12
     cookie_secure: bool = False
 
@@ -38,6 +42,12 @@ class Settings(BaseSettings):
     fake_llm_mode: Literal["ok", "error", "timeout", "slow"] = "ok"
 
     celery_eager: bool = False
+
+    @model_validator(mode="after")
+    def _prod_requires_real_secret(self) -> "Settings":
+        if self.env == "prod" and (self.jwt_secret == DEV_JWT_SECRET or len(self.jwt_secret) < 32):
+            raise ValueError("JWT_SECRET must be set to a random value of 32+ characters in prod")
+        return self
 
 
 @lru_cache

@@ -23,3 +23,6 @@ lint:
 
 migrate:
 	docker compose exec api alembic upgrade head
+
+seed:          ## load demo users, collections, documents and tickets
+	docker compose exec api python -m app.cli seed

@@ -10,8 +10,15 @@ def main(argv: list[str]) -> None:
     if cmd == "init-storage":
         storage.ensure_bucket()
         print("bucket ready")
+    elif cmd == "seed":
+        from app import seed
+        from app.db import SessionLocal
+
+        with SessionLocal() as db:
+            seed.run(db)
+        print("seed complete")
     else:
-        print("usage: python -m app.cli init-storage", file=sys.stderr)
+        print("usage: python -m app.cli [init-storage|seed]", file=sys.stderr)
         sys.exit(2)
 
 

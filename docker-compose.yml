@@ -14,7 +14,7 @@ x-backend-env: &backend-env
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
   FAKE_LLM_MODE: ${FAKE_LLM_MODE:-ok}
-  JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+  JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me-in-prod}
   HF_HOME: /models
   FASTEMBED_CACHE_PATH: /models/fastembed
 

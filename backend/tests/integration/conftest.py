@@ -43,5 +43,24 @@ def client():
 
     from app.main import app
 
-    with TestClient(app) as c:
+    with TestClient(app, headers={"X-Requested-With": "supportlens"}) as c:
         yield c
+
+
+@pytest.fixture
+def make_client():
+    """Factory for extra independent clients (separate cookie jars)."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    clients = []
+
+    def _make():
+        c = TestClient(app, headers={"X-Requested-With": "supportlens"})
+        clients.append(c)
+        return c
+
+    yield _make
+    for c in clients:
+        c.close()

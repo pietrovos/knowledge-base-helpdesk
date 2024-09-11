@@ -4,7 +4,6 @@ from typing import Literal
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 DEV_JWT_SECRET = "dev-only-insecure-secret-change-me-in-prod"
 
 

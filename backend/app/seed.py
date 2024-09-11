@@ -21,12 +21,18 @@ GROUPS = {
 }
 
 COLLECTIONS = {
-    "Customer Policies": ("Refunds, shipping, warranty and account policies customers ask about.",
-                          ["Tier 1 Support", "Billing Team"]),
-    "Billing Operations": ("Internal billing procedures: invoices, chargebacks, credits.",
-                           ["Billing Team"]),
-    "Product Handbook": ("How the product works: features, plans, limits, troubleshooting.",
-                         ["Tier 1 Support", "Billing Team"]),
+    "Customer Policies": (
+        "Refunds, shipping, warranty and account policies customers ask about.",
+        ["Tier 1 Support", "Billing Team"],
+    ),
+    "Billing Operations": (
+        "Internal billing procedures: invoices, chargebacks, credits.",
+        ["Billing Team"],
+    ),
+    "Product Handbook": (
+        "How the product works: features, plans, limits, troubleshooting.",
+        ["Tier 1 Support", "Billing Team"],
+    ),
     "Security & Compliance": ("Internal security procedures. Restricted.", []),
 }
 
@@ -43,7 +49,9 @@ def _get_or_create(db: Session, model, defaults: dict | None = None, **keys):
 def seed_identity(db: Session) -> None:
     pw = hash_password(DEMO_PASSWORD)
     users = {
-        email: _get_or_create(db, User, {"name": name, "role": role, "password_hash": pw}, email=email)
+        email: _get_or_create(
+            db, User, {"name": name, "role": role, "password_hash": pw}, email=email
+        )
         for email, name, role in USERS
     }
     groups = {name: _get_or_create(db, Group, name=name) for name in GROUPS}

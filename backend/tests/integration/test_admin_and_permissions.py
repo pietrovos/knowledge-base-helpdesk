@@ -13,21 +13,32 @@ def test_agents_cannot_use_admin_endpoints(client):
 
 def test_admin_manages_users_groups_collections_and_grants(client):
     login(client, make_user(Role.admin))
-    u = client.post("/api/users", json={"email": "new@example.com", "name": "New Agent",
-                                         "password": "longenough1"}).json()
+    u = client.post(
+        "/api/users",
+        json={"email": "new@example.com", "name": "New Agent", "password": "longenough1"},
+    ).json()
     assert u["role"] == "agent"
-    assert client.post("/api/users", json={"email": "NEW@example.com", "name": "Dup",
-                                            "password": "longenough1"}).status_code == 409
+    assert (
+        client.post(
+            "/api/users",
+            json={"email": "NEW@example.com", "name": "Dup", "password": "longenough1"},
+        ).status_code
+        == 409
+    )
     g = client.post("/api/groups", json={"name": "Tier 2"}).json()
     g = client.post(f"/api/groups/{g['id']}/members", json={"user_id": u["id"]}).json()
     assert [m["id"] for m in g["members"]] == [u["id"]]
-    c = client.post("/api/collections", json={"name": "Billing", "description": "Billing policies"}).json()
+    c = client.post(
+        "/api/collections", json={"name": "Billing", "description": "Billing policies"}
+    ).json()
     grant = client.post(f"/api/collections/{c['id']}/grants", json={"group_id": g["id"]})
     assert grant.status_code == 201
     assert grant.json()["group"]["name"] == "Tier 2"
     dup = client.post(f"/api/collections/{c['id']}/grants", json={"group_id": g["id"]})
     assert dup.status_code == 409
-    bad = client.post(f"/api/collections/{c['id']}/grants", json={"group_id": g["id"], "user_id": u["id"]})
+    bad = client.post(
+        f"/api/collections/{c['id']}/grants", json={"group_id": g["id"], "user_id": u["id"]}
+    )
     assert bad.status_code == 422
 
 

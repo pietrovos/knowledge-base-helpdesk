@@ -2,9 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { api } from '../api/client'
-import type { Collection, Grant, Group, User } from '../api/types'
+import type { Collection, DocumentSummary, Grant, Group, User } from '../api/types'
+import { timeAgo } from '../components/format'
+import { UploadButton } from '../components/UploadButton'
+import { isBusy, VersionProgress, VersionStatusBadge } from '../components/VersionStatus'
 import { useAuth } from '../auth/AuthContext'
-import { Badge, Button, Card, ErrorState, InlineError, Loading, PageHeader, Select } from '../components/ui'
+import { Badge, Button, Card, EmptyState, ErrorState, InlineError, Loading, PageHeader, Select } from '../components/ui'
 
 export function CollectionDetailPage() {
   const { collectionId } = useParams()
@@ -22,10 +25,60 @@ export function CollectionDetailPage() {
       </Link>
       <PageHeader title={collection.data.name} description={collection.data.description} />
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <section aria-label="Documents" />
+        <DocumentsSection collectionId={id} isAdmin={user?.role === 'admin'} />
         {user?.role === 'admin' && <AccessPanel collectionId={id} />}
       </div>
     </>
+  )
+}
+
+function DocumentsSection({ collectionId, isAdmin }: { collectionId: number; isAdmin: boolean }) {
+  const docs = useQuery({
+    queryKey: ['documents', 'collection', collectionId],
+    queryFn: () => api<DocumentSummary[]>(`/collections/${collectionId}/documents`),
+    // Poll while anything is being processed so status and progress update live.
+    refetchInterval: (q) => (q.state.data?.some((d) => isBusy(d.latest_version)) ? 1000 : false),
+  })
+  return (
+    <section aria-label="Documents" className="min-w-0">
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <h2 className="font-semibold">Documents</h2>
+        {isAdmin && <UploadButton endpoint={`/collections/${collectionId}/documents`} label="Upload document" />}
+      </div>
+      {isAdmin && <p className="-mt-1 mb-3 text-xs text-slate-500">Markdown or plain text, up to 2 MB. Uploading a file with an existing name creates a new version.</p>}
+      {docs.isPending ? (
+        <Loading />
+      ) : docs.isError ? (
+        <ErrorState error={docs.error} onRetry={() => void docs.refetch()} />
+      ) : docs.data.length === 0 ? (
+        <EmptyState title="No documents yet">{isAdmin ? 'Upload a Markdown or text file to make it searchable.' : 'Nothing has been published to this collection.'}</EmptyState>
+      ) : (
+        <Card>
+          <ul className="divide-y divide-slate-100">
+            {docs.data.map((d) => {
+              const latest = d.latest_version
+              return (
+                <li key={d.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link to={`/documents/${d.id}`} className="font-medium text-slate-900 hover:text-indigo-700">
+                        {d.title}
+                      </Link>
+                      <p className="truncate text-xs text-slate-500">
+                        {d.filename} · {d.current_version ? `v${d.current_version.version} live · ${d.current_version.chunk_count} chunks` : 'not live yet'} · updated {timeAgo(latest?.created_at ?? d.created_at)}
+                      </p>
+                    </div>
+                    {latest && <VersionStatusBadge version={latest} />}
+                  </div>
+                  {latest && <VersionProgress version={latest} />}
+                  {latest?.status === 'failed' && <p className="mt-2 text-xs text-red-600">v{latest.version} failed: {latest.error}</p>}
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
+      )}
+    </section>
   )
 }
 

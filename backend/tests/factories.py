@@ -12,8 +12,13 @@ _HASH = hash_password(PASSWORD)
 def make_user(role: Role = Role.agent, *, name: str | None = None, active: bool = True) -> User:
     n = next(_seq)
     with SessionLocal() as db:
-        u = User(email=f"user{n}@example.com", name=name or f"User {n}", role=role,
-                 password_hash=_HASH, is_active=active)
+        u = User(
+            email=f"user{n}@example.com",
+            name=name or f"User {n}",
+            role=role,
+            password_hash=_HASH,
+            is_active=active,
+        )
         db.add(u)
         db.commit()
         return u
@@ -30,7 +35,9 @@ def make_group(name: str, *members: User) -> Group:
         return g
 
 
-def make_collection(name: str, *, users: tuple[User, ...] = (), groups: tuple[Group, ...] = ()) -> Collection:
+def make_collection(
+    name: str, *, users: tuple[User, ...] = (), groups: tuple[Group, ...] = ()
+) -> Collection:
     with SessionLocal() as db:
         c = Collection(name=name)
         db.add(c)

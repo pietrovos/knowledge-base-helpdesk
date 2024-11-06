@@ -53,3 +53,18 @@ def make_collection(
 def login(client, user: User) -> None:
     r = client.post("/api/auth/login", json={"email": user.email, "password": PASSWORD})
     assert r.status_code == 200, r.text
+
+
+def make_ticket(subject: str = "Where is my refund?", body: str = "I returned my order two weeks ago.",
+                *, priority: str = "normal", status: str = "open", assignee: User | None = None):
+    from app.models import AuthorType, Ticket, TicketMessage, TicketPriority, TicketStatus
+
+    with SessionLocal() as db:
+        t = Ticket(subject=subject, customer_name="Casey Customer", customer_email="casey@example.com",
+                   priority=TicketPriority(priority), status=TicketStatus(status),
+                   assignee_id=assignee.id if assignee else None)
+        db.add(t)
+        db.flush()
+        db.add(TicketMessage(ticket_id=t.id, author_type=AuthorType.customer, body=body))
+        db.commit()
+        return t

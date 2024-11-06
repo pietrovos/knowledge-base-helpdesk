@@ -65,5 +65,51 @@ def seed_identity(db: Session) -> None:
     db.commit()
 
 
+TICKETS = [
+    (
+        "Refund for order #48213 still not received",
+        "Morgan Blake",
+        "morgan.blake@example.com",
+        "high",
+        "Hi, I returned my headphones 12 days ago and the tracking shows you received them on the 3rd. "
+        "When will I see the refund on my card?",
+    ),
+    (
+        "Can I return a gift card?",
+        "Priya Natarajan",
+        "priya.n@example.com",
+        "normal",
+        "I bought a $100 gift card by mistake last week. Can I return it for a refund?",
+    ),
+    (
+        "Charged twice for my subscription",
+        "Luis Ortega",
+        "luis.ortega@example.com",
+        "urgent",
+        "My bank statement shows two charges of $29 for the Pro plan this month. Please fix this ASAP.",
+    ),
+]
+
+
+def seed_tickets(db: Session) -> None:
+    from app.models import AuthorType, Ticket, TicketEvent, TicketMessage, TicketPriority
+
+    for subject, name, email, priority, body in TICKETS:
+        if db.scalar(select(Ticket.id).where(Ticket.subject == subject)):
+            continue
+        t = Ticket(
+            subject=subject,
+            customer_name=name,
+            customer_email=email,
+            priority=TicketPriority(priority),
+        )
+        db.add(t)
+        db.flush()
+        db.add(TicketMessage(ticket_id=t.id, author_type=AuthorType.customer, body=body))
+        db.add(TicketEvent(ticket_id=t.id, kind="created", data={"channel": "email"}))
+    db.commit()
+
+
 def run(db: Session) -> None:
     seed_identity(db)
+    seed_tickets(db)

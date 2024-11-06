@@ -34,8 +34,13 @@ test('agents do not see admin navigation', async () => {
 })
 
 test('agents are redirected away from admin pages', async () => {
-  renderApp('/admin/users', { 'GET /auth/me': agent, 'GET /collections': collections })
-  expect(await screen.findByText('Customer Policies')).toBeInTheDocument()
+  const { router } = renderApp('/admin/users', {
+    'GET /auth/me': agent,
+    'GET /tickets/counts': {},
+    'GET /tickets': { items: [], total: 0, page: 1, page_size: 25 },
+  })
+  expect(await screen.findByRole('heading', { name: 'Inbox' })).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/tickets')
 })
 
 test('admin can revoke a grant from the access panel', async () => {

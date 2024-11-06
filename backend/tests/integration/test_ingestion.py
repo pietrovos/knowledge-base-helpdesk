@@ -25,14 +25,22 @@ def admin_client(client):
 
 
 def upload(client, collection_id, content, name="refunds.md", **form):
-    return client.post(f"/api/collections/{collection_id}/documents",
-                       files={"file": (name, content, "text/markdown")}, data=form)
+    return client.post(
+        f"/api/collections/{collection_id}/documents",
+        files={"file": (name, content, "text/markdown")},
+        data=form,
+    )
 
 
 def active_chunks(document_id):
     with SessionLocal() as db:
-        return list(db.scalars(select(Chunk).where(Chunk.document_id == document_id, Chunk.is_active)
-                               .order_by(Chunk.ordinal)))
+        return list(
+            db.scalars(
+                select(Chunk)
+                .where(Chunk.document_id == document_id, Chunk.is_active)
+                .order_by(Chunk.ordinal)
+            )
+        )
 
 
 def test_upload_is_chunked_embedded_and_activated(admin_client):
@@ -50,8 +58,11 @@ def test_upload_is_chunked_embedded_and_activated(admin_client):
     chunks = active_chunks(doc_id)
     assert [ch.heading for ch in chunks] == ["Refund Policy", "Refund Policy > Exceptions"]
     with SessionLocal() as db:
-        n = db.scalar(select(func.count()).select_from(ChunkEmbedding)
-                      .where(ChunkEmbedding.chunk_id.in_([ch.id for ch in chunks])))
+        n = db.scalar(
+            select(func.count())
+            .select_from(ChunkEmbedding)
+            .where(ChunkEmbedding.chunk_id.in_([ch.id for ch in chunks]))
+        )
     assert n == 2
     assert admin_client.get(f"/api/collections/{c.id}").json()["document_count"] == 1
 
@@ -90,7 +101,9 @@ def test_reprocessing_is_idempotent(admin_client):
     after = [(ch.ordinal, ch.text) for ch in active_chunks(doc_id)]
     assert before == after
     with SessionLocal() as db:
-        assert db.scalar(select(func.count()).select_from(Chunk).where(Chunk.version_id == vid)) == 2
+        assert (
+            db.scalar(select(func.count()).select_from(Chunk).where(Chunk.version_id == vid)) == 2
+        )
 
 
 class FlakyEmbedder(FakeEmbedder):
@@ -139,7 +152,10 @@ def test_failed_new_version_keeps_previous_version_live(admin_client, monkeypatc
     monkeypatch.setattr(ingestion, "backoff_seconds", lambda n: 0)
     upload(admin_client, c.id, V2)
     detail = admin_client.get(f"/api/documents/{doc_id}").json()
-    assert [(v["version"], v["status"]) for v in detail["versions"]] == [(2, "failed"), (1, "ready")]
+    assert [(v["version"], v["status"]) for v in detail["versions"]] == [
+        (2, "failed"),
+        (1, "ready"),
+    ]
     assert detail["current_version"]["version"] == 1
     assert any("30 days" in ch.text for ch in active_chunks(doc_id))
 
@@ -161,8 +177,12 @@ def test_out_of_order_processing_never_activates_older_version(admin_client, mon
     ingestion.process_version(v1["version"]["id"])
     doc_id = v1["document"]["id"]
     with SessionLocal() as db:
-        statuses = {v.version: v.status for v in db.scalars(
-            select(DocumentVersion).where(DocumentVersion.document_id == doc_id))}
+        statuses = {
+            v.version: v.status
+            for v in db.scalars(
+                select(DocumentVersion).where(DocumentVersion.document_id == doc_id)
+            )
+        }
     assert statuses == {1: VersionStatus.superseded, 2: VersionStatus.ready}
     assert any("45 days" in ch.text for ch in active_chunks(doc_id))
 
@@ -178,12 +198,15 @@ def test_delete_retires_chunks_immediately(admin_client):
     assert upload(admin_client, c.id, V1).json()["document"]["id"] != doc_id
 
 
-@pytest.mark.parametrize(("name", "content", "status"), [
-    ("policy.pdf", b"%PDF-1.4", 422),
-    ("policy.md", b"\xff\xfe\x00bad", 422),
-    ("policy.md", b"", 422),
-    ("big.md", b"a" * (ingestion.MAX_UPLOAD_BYTES + 1), 413),
-])
+@pytest.mark.parametrize(
+    ("name", "content", "status"),
+    [
+        ("policy.pdf", b"%PDF-1.4", 422),
+        ("policy.md", b"\xff\xfe\x00bad", 422),
+        ("policy.md", b"", 422),
+        ("big.md", b"a" * (ingestion.MAX_UPLOAD_BYTES + 1), 413),
+    ],
+)
 def test_upload_validation(admin_client, name, content, status):
     c = make_collection("Policies")
     assert upload(admin_client, c.id, content, name=name).status_code == status
@@ -200,9 +223,13 @@ def test_agents_read_but_cannot_upload(client, make_client):
     hidden_doc = upload(admin_client, hidden.id, V1).json()["document"]
 
     login(client, agent)
-    assert [d["id"] for d in client.get(f"/api/collections/{readable.id}/documents").json()] == [doc["id"]]
+    assert [d["id"] for d in client.get(f"/api/collections/{readable.id}/documents").json()] == [
+        doc["id"]
+    ]
     assert upload(client, readable.id, V2).status_code == 403
     assert client.get(f"/api/collections/{hidden.id}/documents").status_code == 404
     assert client.get(f"/api/documents/{hidden_doc['id']}").status_code == 404
-    url = client.get(f"/api/documents/{doc['id']}/versions/{doc['current_version']['id']}/download").json()["url"]
+    url = client.get(
+        f"/api/documents/{doc['id']}/versions/{doc['current_version']['id']}/download"
+    ).json()["url"]
     assert "X-Amz-Expires=300" in url

@@ -89,3 +89,52 @@ export interface ChunkRow {
   char_end: number
   is_active: boolean
 }
+
+export type TicketStatus = 'open' | 'pending' | 'escalated' | 'resolved' | 'closed'
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent'
+export type InboxView = 'active' | 'mine' | 'unassigned' | 'pending' | 'escalated' | 'resolved' | 'closed' | 'all'
+
+export interface TicketSummary {
+  id: number
+  subject: string
+  customer_name: string
+  customer_email: string
+  status: TicketStatus
+  priority: TicketPriority
+  assignee: UserRef | null
+  created_at: string
+  updated_at: string
+  preview: string
+  message_count: number
+}
+
+export interface TicketMessage {
+  id: number
+  author_type: 'customer' | 'agent'
+  author: UserRef | null
+  body: string
+  is_internal: boolean
+  draft_id: number | null
+  created_at: string
+}
+
+export interface TicketEvent {
+  id: number
+  kind: string
+  actor: UserRef | null
+  data: Record<string, unknown>
+  created_at: string
+}
+
+export interface TicketDetail extends TicketSummary {
+  escalation_reason: string | null
+  messages: TicketMessage[]
+  events: TicketEvent[]
+}
+
+export interface TicketPage {
+  items: TicketSummary[]
+  total: number
+  page: number
+  page_size: number
+}

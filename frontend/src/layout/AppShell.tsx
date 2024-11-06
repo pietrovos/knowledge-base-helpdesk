@@ -10,6 +10,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
+  { to: '/tickets', label: 'Inbox' },
   { to: '/collections', label: 'Knowledge' },
   { to: '/admin/users', label: 'Users', adminOnly: true },
   { to: '/admin/groups', label: 'Groups', adminOnly: true },

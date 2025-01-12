@@ -138,3 +138,24 @@ export interface TicketPage {
   page: number
   page_size: number
 }
+
+export interface SearchHit {
+  chunk_id: number
+  document_id: number
+  document_title: string
+  collection_name: string
+  version: number
+  heading: string
+  text: string
+  similarity: number | null
+  keyword_rank: number | null
+  score: number
+}
+
+export interface SearchResponse {
+  query: string
+  hits: SearchHit[]
+  has_evidence: boolean
+  embedding_model: string
+  latency_ms: number
+}

@@ -15,6 +15,9 @@ from app.config import get_settings
 class Embedder(Protocol):
     name: str
     dim: int
+    # Below this cosine similarity, the best match is treated as unrelated to the question.
+    # Calibrated per model on the eval set (see evals/).
+    min_similarity: float
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]: ...
 
@@ -93,6 +96,7 @@ class FakeEmbedder:
 
     name = "fake-hash-384"
     dim = 384
+    min_similarity = 0.15
 
     def _vec(self, text: str) -> list[float]:
         v = [0.0] * self.dim
@@ -116,6 +120,7 @@ class LocalEmbedder:
     """fastembed (ONNX) model; runs on CPU with no API key. Default provider."""
 
     dim = 384
+    min_similarity = 0.6
 
     def __init__(self, model_name: str) -> None:
         from fastembed import TextEmbedding
@@ -132,6 +137,7 @@ class LocalEmbedder:
 
 class VoyageEmbedder:
     dim = 1024
+    min_similarity = 0.35
 
     def __init__(self, model: str, api_key: str | None) -> None:
         import voyageai

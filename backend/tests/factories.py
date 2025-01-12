@@ -55,16 +55,45 @@ def login(client, user: User) -> None:
     assert r.status_code == 200, r.text
 
 
-def make_ticket(subject: str = "Where is my refund?", body: str = "I returned my order two weeks ago.",
-                *, priority: str = "normal", status: str = "open", assignee: User | None = None):
+def make_ticket(
+    subject: str = "Where is my refund?",
+    body: str = "I returned my order two weeks ago.",
+    *,
+    priority: str = "normal",
+    status: str = "open",
+    assignee: User | None = None,
+):
     from app.models import AuthorType, Ticket, TicketMessage, TicketPriority, TicketStatus
 
     with SessionLocal() as db:
-        t = Ticket(subject=subject, customer_name="Casey Customer", customer_email="casey@example.com",
-                   priority=TicketPriority(priority), status=TicketStatus(status),
-                   assignee_id=assignee.id if assignee else None)
+        t = Ticket(
+            subject=subject,
+            customer_name="Casey Customer",
+            customer_email="casey@example.com",
+            priority=TicketPriority(priority),
+            status=TicketStatus(status),
+            assignee_id=assignee.id if assignee else None,
+        )
         db.add(t)
         db.flush()
         db.add(TicketMessage(ticket_id=t.id, author_type=AuthorType.customer, body=body))
         db.commit()
         return t
+
+
+def add_document(collection, filename: str, content: str, *, uploader: User | None = None):
+    """Upload and synchronously ingest a document; returns (document_id, version_id)."""
+    from app.models import Collection
+    from app.services import ingestion, storage
+
+    storage.ensure_bucket()
+    uploader = uploader or make_user(Role.admin)
+    with SessionLocal() as db:
+        coll = db.get(Collection, collection.id)
+        user = db.get(User, uploader.id)
+        doc, version, _ = ingestion.create_version(
+            db, collection=coll, filename=filename, data=content.encode(), user=user
+        )
+        ids = (doc.id, version.id)
+    ingestion.process_version(ids[1])
+    return ids

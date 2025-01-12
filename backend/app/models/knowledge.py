@@ -5,6 +5,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Computed,
     DateTime,
     Enum,
     ForeignKey,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     func,
     select,
 )
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.db import Base
@@ -114,6 +116,11 @@ class Chunk(Base):
     char_end: Mapped[int] = mapped_column(Integer, nullable=False)
     token_estimate: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    tsv: Mapped[str] = mapped_column(
+        TSVECTOR,
+        Computed("to_tsvector('english', heading || ' ' || text)", persisted=True),
+        deferred=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -124,6 +131,7 @@ class Chunk(Base):
     __table_args__ = (
         UniqueConstraint("version_id", "ordinal", name="uq_chunk_ordinal"),
         Index("ix_chunks_active_document", "document_id", postgresql_where="is_active"),
+        Index("ix_chunks_tsv", "tsv", postgresql_using="gin"),
     )
 
 

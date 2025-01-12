@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { api } from '../api/client'
 import type { Collection } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
+import { KnowledgeSearch } from '../components/KnowledgeSearch'
 import { Button, Card, EmptyState, ErrorState, InlineError, Input, Label, Loading, PageHeader } from '../components/ui'
 
 export function CollectionsPage() {
@@ -20,6 +21,7 @@ export function CollectionsPage() {
         actions={isAdmin && <Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Close' : 'New collection'}</Button>}
       />
       {showForm && <CreateCollectionForm onDone={() => setShowForm(false)} />}
+      <KnowledgeSearch />
       {collections.isPending ? (
         <Loading />
       ) : collections.isError ? (

@@ -5,6 +5,7 @@ import { api } from '../api/client'
 import type { TicketDetail, TicketEvent, TicketMessage, TicketPriority, TicketStatus, UserRef } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { timeAgo } from '../components/format'
+import { DraftPanel } from '../components/DraftPanel'
 import { PriorityBadge, StatusBadge, cap } from '../components/TicketBadges'
 import { Button, Card, ErrorState, InlineError, Label, Loading, Select, Textarea, cx } from '../components/ui'
 
@@ -29,6 +30,7 @@ export function TicketPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0 space-y-6">
           <Conversation ticket={t} />
+          <DraftPanel ticketId={t.id} />
           <Composer ticket={t} />
         </div>
         <aside className="space-y-6">

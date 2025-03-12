@@ -14,7 +14,8 @@ import os
 import random
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import delete, func, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
@@ -245,31 +246,43 @@ def _store_and_activate(version_id: int, spans, vectors, model: str) -> None:
         )
         db.refresh(version)
 
-        db.execute(delete(Chunk).where(Chunk.version_id == version_id))
-        rows = db.execute(
-            insert(Chunk).returning(Chunk.id, Chunk.ordinal),
-            [
-                {
-                    "document_id": doc.id,
-                    "version_id": version_id,
-                    "ordinal": s.ordinal,
-                    "heading": s.heading,
-                    "text": s.text,
-                    "char_start": s.char_start,
-                    "char_end": s.char_end,
-                    "token_estimate": s.token_estimate,
-                    "is_active": False,
-                }
-                for s in spans
-            ],
-        ).all()
-        ids = {ordinal: cid for cid, ordinal in rows}
-        db.execute(
-            insert(ChunkEmbedding),
+        # Upsert by (version_id, ordinal) so re-processing keeps chunk IDs stable: drafts that
+        # cited a chunk keep pointing at the same row.
+        rows = [
+            {
+                "document_id": doc.id,
+                "version_id": version_id,
+                "ordinal": s.ordinal,
+                "heading": s.heading,
+                "text": s.text,
+                "char_start": s.char_start,
+                "char_end": s.char_end,
+                "token_estimate": s.token_estimate,
+                "is_active": False,
+            }
+            for s in spans
+        ]
+        stmt = pg_insert(Chunk).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            constraint="uq_chunk_ordinal",
+            set_={
+                c: stmt.excluded[c]
+                for c in ("heading", "text", "char_start", "char_end", "token_estimate")
+            },
+        ).returning(Chunk.id, Chunk.ordinal)
+        ids = {ordinal: cid for cid, ordinal in db.execute(stmt).all()}
+        # A changed chunker may produce fewer chunks: drop this version's leftovers.
+        db.execute(delete(Chunk).where(Chunk.version_id == version_id, Chunk.ordinal >= len(spans)))
+        emb = pg_insert(ChunkEmbedding).values(
             [
                 {"chunk_id": ids[s.ordinal], "model": model, "embedding": v}
                 for s, v in zip(spans, vectors, strict=True)
-            ],
+            ]
+        )
+        db.execute(
+            emb.on_conflict_do_update(
+                index_elements=["chunk_id", "model"], set_={"embedding": emb.excluded.embedding}
+            )
         )
 
         current = (

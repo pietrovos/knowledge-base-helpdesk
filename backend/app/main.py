@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api import auth, collections, documents, groups, search, tickets, users
+from app.api import auth, collections, documents, drafts, gaps, groups, search, tickets, users
 from app.db import engine
 
 app = FastAPI(title="SupportLens API", version="0.1.0")
@@ -23,7 +23,7 @@ async def csrf_guard(request: Request, call_next):
     return await call_next(request)
 
 
-for module in (auth, users, groups, collections, documents, tickets, search):
+for module in (auth, users, groups, collections, documents, tickets, search, drafts, gaps):
     app.include_router(module.router)
 
 

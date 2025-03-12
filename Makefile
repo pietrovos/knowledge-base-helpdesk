@@ -1,4 +1,4 @@
-.PHONY: up down logs test test-backend test-frontend lint migrate seed eval e2e
+.PHONY: up down logs test test-backend test-frontend lint migrate seed eval e2e check
 
 up:            ## start the full local stack
 	docker compose up -d --build
@@ -26,3 +26,7 @@ migrate:
 
 seed:          ## load demo users, collections, documents and tickets
 	docker compose exec api python -m app.cli seed
+
+check:         ## everything CI runs: lint, typecheck, unit + integration tests
+	cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest
+	cd frontend && npm run lint && npm run typecheck && npm test

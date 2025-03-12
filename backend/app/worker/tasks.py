@@ -29,3 +29,19 @@ def process_version_task(self, version_id: int) -> None:
     except Exception as e:
         log.exception("unexpected ingestion failure for version %s", version_id)
         ingestion.mark_failed(version_id, f"Unexpected error: {e}")
+
+
+@celery_app.task(name="drafts.generate", acks_late=True, soft_time_limit=120)
+def generate_draft_task(draft_id: int) -> None:
+    from app.services import drafting
+
+    try:
+        drafting.run_draft(draft_id)
+    except Exception as e:
+        log.exception("draft %s failed unexpectedly", draft_id)
+        drafting._finish(
+            draft_id,
+            status=drafting.DraftStatus.failed,
+            error_kind="internal",
+            error=f"Unexpected error while drafting: {e}",
+        )

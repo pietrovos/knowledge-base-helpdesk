@@ -76,15 +76,16 @@ _STOP = frozenset(
 )
 
 
+def _stem(t: str) -> str:
+    """Tiny suffix stripper: enough to match "returned"/"return" and "refunds"/"refund"."""
+    for suffix in ("ing", "ed", "es", "s"):
+        if len(t) > len(suffix) + 3 and t.endswith(suffix) and not t.endswith("ss"):
+            return t[: -len(suffix)]
+    return t
+
+
 def tokenize(text: str) -> list[str]:
-    tokens = []
-    for t in _TOKEN.findall(text.lower()):
-        if t in _STOP:
-            continue
-        if len(t) > 4 and t.endswith("s") and not t.endswith("ss"):
-            t = t[:-1]
-        tokens.append(t)
-    return tokens
+    return [_stem(t) for t in _TOKEN.findall(text.lower()) if t not in _STOP]
 
 
 class FakeEmbedder:

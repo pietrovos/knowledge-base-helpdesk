@@ -94,12 +94,12 @@ def test_reprocessing_is_idempotent(admin_client):
     c = make_collection("Policies")
     body = upload(admin_client, c.id, V1).json()
     doc_id, vid = body["document"]["id"], body["version"]["id"]
-    before = [(ch.ordinal, ch.text) for ch in active_chunks(doc_id)]
+    before = [(ch.id, ch.ordinal, ch.text) for ch in active_chunks(doc_id)]
     r = admin_client.post(f"/api/documents/{doc_id}/versions/{vid}/reprocess")
     assert r.status_code == 200
     ingestion.process_version(vid)  # and once more directly, as a duplicate delivery would
-    after = [(ch.ordinal, ch.text) for ch in active_chunks(doc_id)]
-    assert before == after
+    after = [(ch.id, ch.ordinal, ch.text) for ch in active_chunks(doc_id)]
+    assert before == after  # same rows, same IDs: citations to them stay valid
     with SessionLocal() as db:
         assert (
             db.scalar(select(func.count()).select_from(Chunk).where(Chunk.version_id == vid)) == 2

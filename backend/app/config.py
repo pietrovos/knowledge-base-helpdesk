@@ -36,9 +36,10 @@ class Settings(BaseSettings):
     llm_provider: Literal["anthropic", "fake"] = "fake"
     llm_model: str = "claude-opus-5-5"
     anthropic_api_key: str | None = None
+    llm_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
     llm_timeout_seconds: float = 45.0
     # Fake provider behaviour, used by tests and the "provider down" demo.
-    fake_llm_mode: Literal["ok", "error", "timeout", "slow"] = "ok"
+    fake_llm_mode: Literal["ok", "error", "timeout", "slow", "bad_citations", "uncited"] = "ok"
 
     celery_eager: bool = False
 

@@ -1,5 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router'
+import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { Loading, cx } from '../components/ui'
 
@@ -7,10 +9,13 @@ interface NavItem {
   to: string
   label: string
   adminOnly?: boolean
+  count?: 'escalated' | 'gaps'
 }
 
 const NAV: NavItem[] = [
   { to: '/tickets', label: 'Inbox' },
+  { to: '/escalations', label: 'Escalations', count: 'escalated' },
+  { to: '/knowledge-gaps', label: 'Knowledge gaps', count: 'gaps' },
   { to: '/collections', label: 'Knowledge' },
   { to: '/admin/users', label: 'Users', adminOnly: true },
   { to: '/admin/groups', label: 'Groups', adminOnly: true },
@@ -29,11 +34,14 @@ export function AppShell({ banner }: { banner?: ReactNode }) {
   const { user, isLoading, logout } = useAuth()
   const location = useLocation()
   const [open, setOpen] = useState(false)
+  const ticketCounts = useQuery({ queryKey: ['tickets', 'counts'], queryFn: () => api<Record<string, number>>('/tickets/counts'), enabled: !!user, refetchInterval: 30_000 })
+  const gapCounts = useQuery({ queryKey: ['knowledge-gaps', 'counts'], queryFn: () => api<Record<string, number>>('/knowledge-gaps/counts'), enabled: !!user, refetchInterval: 30_000 })
 
   if (isLoading) return <Loading />
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
 
   const items = NAV.filter((n) => !n.adminOnly || user.role === 'admin')
+  const counts = { escalated: ticketCounts.data?.escalated, gaps: gapCounts.data?.open }
   const nav = (
     <nav className="flex flex-1 flex-col gap-1" aria-label="Main">
       {items.map((item) => (
@@ -48,7 +56,10 @@ export function AppShell({ banner }: { banner?: ReactNode }) {
             )
           }
         >
-          {item.label}
+          <span className="flex items-center justify-between">
+            {item.label}
+            {item.count && !!counts[item.count] && <span className="rounded-full bg-slate-700 px-2 text-xs text-white">{counts[item.count]}</span>}
+          </span>
         </NavLink>
       ))}
     </nav>

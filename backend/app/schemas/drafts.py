@@ -83,3 +83,15 @@ class GapOut(ORM):
     resolved_document_id: int | None
     created_at: datetime
     resolved_at: datetime | None
+
+
+class PublishIn(BaseModel):
+    text: str = Field(min_length=1, max_length=20_000)
+    # Optionally move the ticket along in the same action.
+    ticket_status: str | None = Field(default=None, pattern="^(open|pending|resolved)$")
+
+
+class GapUpdate(BaseModel):
+    status: GapStatus
+    resolution_note: str | None = Field(default=None, max_length=2000)
+    resolved_document_id: int | None = None

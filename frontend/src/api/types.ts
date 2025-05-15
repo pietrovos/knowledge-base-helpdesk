@@ -102,6 +102,7 @@ export interface TicketSummary {
   status: TicketStatus
   priority: TicketPriority
   assignee: UserRef | null
+  escalation_reason: string | null
   created_at: string
   updated_at: string
   preview: string
@@ -127,7 +128,6 @@ export interface TicketEvent {
 }
 
 export interface TicketDetail extends TicketSummary {
-  escalation_reason: string | null
   messages: TicketMessage[]
   events: TicketEvent[]
 }

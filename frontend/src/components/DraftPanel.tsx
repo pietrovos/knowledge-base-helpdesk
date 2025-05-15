@@ -216,7 +216,41 @@ function InsufficientEvidence({ draft }: { draft: Draft }) {
           </Button>
         )}
       </div>
+      <EscalateInline draft={draft} />
       <InlineError error={createGap.error} />
+    </div>
+  )
+}
+
+function EscalateInline({ draft }: { draft: Draft }) {
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState(`Knowledge base can't answer: ${draft.question.slice(0, 160)}`)
+  const escalate = useMutation({
+    mutationFn: () => api(`/tickets/${draft.ticket_id}`, { method: 'PATCH', json: { status: 'escalated', escalation_reason: reason } }),
+    onSuccess: () => {
+      setOpen(false)
+      void qc.invalidateQueries({ queryKey: ['tickets'] })
+    },
+  })
+  if (!open)
+    return (
+      <button className="mt-3 text-xs font-medium text-red-700 hover:underline" onClick={() => setOpen(true)}>
+        Escalate this ticket instead
+      </button>
+    )
+  return (
+    <div className="mt-3 space-y-2">
+      <Input aria-label="Escalation reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+        <Button size="sm" variant="danger" disabled={!reason.trim()} loading={escalate.isPending} onClick={() => escalate.mutate()}>
+          Escalate
+        </Button>
+      </div>
+      <InlineError error={escalate.error} />
     </div>
   )
 }

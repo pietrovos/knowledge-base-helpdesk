@@ -1,13 +1,24 @@
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import DB, CurrentUser
 from app.api.tickets import get_ticket_or_404
-from app.models import Chunk, Collection, Document, Draft, DraftStatus, KnowledgeGap, User
-from app.schemas.drafts import DraftCreate, DraftOut, DraftSourceOut, EvidenceOut
+from app.models import (
+    Chunk,
+    Collection,
+    Document,
+    Draft,
+    DraftStatus,
+    KnowledgeGap,
+    Ticket,
+    TicketStatus,
+    User,
+)
+from app.schemas.drafts import DraftCreate, DraftOut, DraftSourceOut, EvidenceOut, PublishIn
 from app.schemas.identity import UserRef
-from app.services import drafting
+from app.services import citations, drafting
+from app.services import tickets as ticket_svc
 from app.services.permissions import readable_collection_ids
 
 router = APIRouter(prefix="/api", tags=["drafts"])
@@ -103,6 +114,41 @@ def discard_draft(draft_id: int, db: DB, user: CurrentUser) -> DraftOut:
     if draft.status == DraftStatus.published:
         raise HTTPException(409, "Published drafts can't be discarded")
     draft.status = DraftStatus.discarded
+    db.commit()
+    return draft_out(db, user, draft)
+
+
+@router.post("/drafts/{draft_id}/publish", response_model=DraftOut)
+def publish_draft(draft_id: int, body: PublishIn, db: DB, user: CurrentUser) -> DraftOut:
+    """The agent's (possibly edited) text goes to the customer; citation markers are internal
+    and are stripped. The draft keeps its sources and citations as the audit trail."""
+    draft = db.scalar(select(Draft).where(Draft.id == draft_id).with_for_update())
+    if draft is None:
+        raise HTTPException(404, "Draft not found")
+    if draft.status != DraftStatus.ready:
+        raise HTTPException(409, f"Only ready drafts can be published (this one is {draft.status})")
+    text = citations.strip_markers(body.text)
+    if not text:
+        raise HTTPException(422, "The reply is empty")
+    ticket = db.get(Ticket, draft.ticket_id)
+    msg = ticket_svc.add_agent_message(db, ticket, user, text, draft_id=draft.id)
+    db.flush()
+    draft.status = DraftStatus.published
+    draft.published_text = text
+    draft.published_message_id = msg.id
+    draft.was_edited = text != citations.strip_markers(draft.reply)
+    ticket_svc.record(
+        db,
+        ticket,
+        user,
+        "draft_published",
+        draft_id=draft.id,
+        edited=draft.was_edited,
+        citations=[s.chunk_ref for s in draft.sources if s.cited],
+    )
+    if body.ticket_status:
+        ticket_svc.set_status(db, ticket, user, TicketStatus(body.ticket_status))
+    ticket.updated_at = func.now()
     db.commit()
     return draft_out(db, user, draft)
 

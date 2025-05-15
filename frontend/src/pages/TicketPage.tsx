@@ -2,16 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { api } from '../api/client'
-import type { TicketDetail, TicketEvent, TicketMessage, TicketPriority, TicketStatus, UserRef } from '../api/types'
+import type { Draft, TicketDetail, TicketEvent, TicketMessage, TicketPriority, TicketStatus, UserRef } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { timeAgo } from '../components/format'
 import { DraftPanel } from '../components/DraftPanel'
+import { PublishEditor } from '../components/PublishEditor'
 import { PriorityBadge, StatusBadge, cap } from '../components/TicketBadges'
 import { Button, Card, ErrorState, InlineError, Label, Loading, Select, Textarea, cx } from '../components/ui'
 
 export function TicketPage() {
   const id = Number(useParams().ticketId)
   const ticket = useQuery({ queryKey: ['tickets', id], queryFn: () => api<TicketDetail>(`/tickets/${id}`) })
+  const [editing, setEditing] = useState<Draft | null>(null)
 
   if (ticket.isPending) return <Loading />
   if (ticket.isError) return <ErrorState error={ticket.error} onRetry={() => void ticket.refetch()} />
@@ -30,8 +32,8 @@ export function TicketPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0 space-y-6">
           <Conversation ticket={t} />
-          <DraftPanel ticketId={t.id} />
-          <Composer ticket={t} />
+          <DraftPanel ticketId={t.id} onUseDraft={setEditing} />
+          {editing ? <PublishEditor key={editing.id} draft={editing} onClose={() => setEditing(null)} /> : <Composer ticket={t} />}
         </div>
         <aside className="space-y-6">
           <Properties ticket={t} />
@@ -237,6 +239,14 @@ function describe(e: TicketEvent): ReactNode {
       )
     case 'unassigned':
       return 'unassigned the ticket'
+    case 'draft_published':
+      return d.edited ? 'sent an edited cited draft' : 'sent a cited draft'
+    case 'knowledge_gap_created':
+      return 'reported a knowledge gap'
+    case 'knowledge_gap_resolved':
+      return `resolved the knowledge gap${d.note ? ` — ${d.note}` : ''}`
+    case 'knowledge_gap_dismissed':
+      return 'dismissed the knowledge gap'
     default:
       return e.kind.replaceAll('_', ' ')
   }

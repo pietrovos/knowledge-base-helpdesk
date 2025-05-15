@@ -21,6 +21,7 @@ class TicketSummary(ORM):
     assignee: UserRef | None
     created_at: datetime
     updated_at: datetime
+    escalation_reason: str | None = None
     preview: str = ""
     message_count: int = 0
 
@@ -44,7 +45,6 @@ class EventOut(ORM):
 
 
 class TicketDetail(TicketSummary):
-    escalation_reason: str | None
     messages: list[MessageOut]
     events: list[EventOut]
 

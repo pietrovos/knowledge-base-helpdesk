@@ -29,7 +29,7 @@ from app.models import (
     User,
 )
 from app.services import citations
-from app.services.llm import DraftRequest, LLMError, LLMProvider, LLMResult, Source, get_llm
+from app.services.llm import DraftRequest, LLMError, LLMProvider, LLMResult, Source
 from app.services.retrieval import retrieve
 
 log = logging.getLogger(__name__)
@@ -119,7 +119,9 @@ def record_call(
 
 
 def run_draft(draft_id: int, llm: LLMProvider | None = None) -> None:
-    llm = llm or get_llm()
+    from app.services.resilience import get_resilient_llm
+
+    llm = llm or get_resilient_llm()
     with SessionLocal() as db:
         draft = db.get(Draft, draft_id)
         if draft is None or draft.status != DraftStatus.pending:

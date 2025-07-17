@@ -225,3 +225,19 @@ export interface KnowledgeGap {
   created_at: string
   resolved_at: string | null
 }
+
+export interface SystemStatus {
+  drafting_available: boolean
+  worker_online: boolean
+  llm: {
+    provider: string
+    model: string
+    state: 'closed' | 'open' | 'half_open'
+    retry_in_seconds: number | null
+    recent_failures: number
+    last_error: string | null
+    simulated_outage: 'none' | 'error' | 'timeout' | 'slow'
+  }
+  embedding_provider: string
+  degraded_reasons: string[]
+}

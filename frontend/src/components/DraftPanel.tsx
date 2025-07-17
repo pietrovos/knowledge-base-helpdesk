@@ -5,6 +5,7 @@ import { api } from '../api/client'
 import type { Draft, KnowledgeGap } from '../api/types'
 import { parseCitations } from './citations'
 import { EvidenceDrawer } from './EvidenceDrawer'
+import { useSystemStatus } from './useSystemStatus'
 import { Badge, Button, Card, InlineError, Input, Spinner, cx } from './ui'
 
 const terminal = (d: Draft) => d.status !== 'pending'
@@ -32,6 +33,8 @@ export function DraftPanel({ ticketId, onUseDraft }: { ticketId: number; onUseDr
   })
   const latest = drafts.data?.find((d) => d.status !== 'discarded')
   const busy = latest?.status === 'pending' || request.isPending
+  const system = useSystemStatus()
+  const unavailable = system.data ? !system.data.drafting_available : false
 
   return (
     <Card className="p-4" >
@@ -41,10 +44,10 @@ export function DraftPanel({ ticketId, onUseDraft }: { ticketId: number; onUseDr
           <p className="text-xs text-slate-500">Grounded only in knowledge you can access. Every claim links to its source.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setAskOpen((v) => !v)} disabled={busy}>
+          <Button variant="secondary" size="sm" onClick={() => setAskOpen((v) => !v)} disabled={busy || unavailable}>
             Ask a question
           </Button>
-          <Button size="sm" onClick={() => request.mutate(undefined)} loading={busy} disabled={busy}>
+          <Button size="sm" onClick={() => request.mutate(undefined)} loading={busy} disabled={busy || unavailable}>
             {latest ? 'Regenerate' : 'Draft reply'}
           </Button>
         </div>
@@ -63,8 +66,13 @@ export function DraftPanel({ ticketId, onUseDraft }: { ticketId: number; onUseDr
           </Button>
         </form>
       )}
+      {unavailable && (
+        <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200" data-testid="drafting-paused">
+          AI drafting is paused: {system.data?.degraded_reasons[0]} You can still reply manually below.
+        </p>
+      )}
       <InlineError error={request.error} />
-      {latest && <DraftView draft={latest} onUseDraft={onUseDraft} />}
+      {latest && !(unavailable && latest.status === 'failed') && <DraftView draft={latest} onUseDraft={onUseDraft} />}
     </Card>
   )
 }

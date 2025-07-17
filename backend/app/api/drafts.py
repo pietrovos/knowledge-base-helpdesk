@@ -20,6 +20,7 @@ from app.schemas.identity import UserRef
 from app.services import citations, drafting
 from app.services import tickets as ticket_svc
 from app.services.permissions import readable_collection_ids
+from app.services.resilience import llm_breaker
 
 router = APIRouter(prefix="/api", tags=["drafts"])
 
@@ -85,6 +86,14 @@ def get_draft_or_404(db: Session, draft_id: int) -> Draft:
 @router.post("/tickets/{ticket_id}/drafts", response_model=DraftOut, status_code=202)
 def request_draft(ticket_id: int, body: DraftCreate, db: DB, user: CurrentUser) -> DraftOut:
     ticket = get_ticket_or_404(db, ticket_id)
+    # Fail fast while the circuit is open: no queued work that is bound to fail.
+    breaker = llm_breaker().status()
+    if breaker.state == "open":
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "AI drafting is paused because the model provider is failing. "
+            "The ticket is fully usable; reply manually or try again shortly.",
+        )
     draft = drafting.create_draft(db, ticket, user, body.question)
     drafting.enqueue(draft.id)
     db.expire_all()

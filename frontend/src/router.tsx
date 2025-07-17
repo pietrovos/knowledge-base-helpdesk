@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AppShell, RequireAdmin } from './layout/AppShell'
 import { GroupsPage } from './pages/admin/GroupsPage'
+import { SystemPage } from './pages/admin/SystemPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { CollectionDetailPage } from './pages/CollectionDetailPage'
 import { CollectionsPage } from './pages/CollectionsPage'
@@ -26,6 +27,7 @@ export const routes = [
       { path: 'documents/:documentId', element: <DocumentPage /> },
       { path: 'admin/users', element: <RequireAdmin><UsersPage /></RequireAdmin> },
       { path: 'admin/groups', element: <RequireAdmin><GroupsPage /></RequireAdmin> },
+      { path: 'admin/system', element: <RequireAdmin><SystemPage /></RequireAdmin> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

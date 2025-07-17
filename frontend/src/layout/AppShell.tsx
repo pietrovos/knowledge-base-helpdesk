@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import { DegradedBanner } from '../components/DegradedBanner'
 import { Loading, cx } from '../components/ui'
 
 interface NavItem {
@@ -19,6 +20,7 @@ const NAV: NavItem[] = [
   { to: '/collections', label: 'Knowledge' },
   { to: '/admin/users', label: 'Users', adminOnly: true },
   { to: '/admin/groups', label: 'Groups', adminOnly: true },
+  { to: '/admin/system', label: 'System', adminOnly: true },
 ]
 
 function Logo() {
@@ -30,7 +32,7 @@ function Logo() {
   )
 }
 
-export function AppShell({ banner }: { banner?: ReactNode }) {
+export function AppShell() {
   const { user, isLoading, logout } = useAuth()
   const location = useLocation()
   const [open, setOpen] = useState(false)
@@ -104,7 +106,7 @@ export function AppShell({ banner }: { banner?: ReactNode }) {
           </button>
           <span className="font-semibold">SupportLens</span>
         </header>
-        {banner}
+        <DegradedBanner />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <Outlet />
         </main>

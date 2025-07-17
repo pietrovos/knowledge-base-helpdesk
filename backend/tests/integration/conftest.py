@@ -28,6 +28,9 @@ def migrated_db():
 
 @pytest.fixture(autouse=True)
 def clean_tables(migrated_db):
+    from app.services.resilience import get_redis
+
+    get_redis().flushdb()  # test Redis db: breaker state, fault-injection switch
     yield
     from app.db import Base, engine
 

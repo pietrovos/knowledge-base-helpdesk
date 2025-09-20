@@ -1,5 +1,7 @@
 """Idempotent demo data. Run with: python -m app.cli seed"""
 
+from pathlib import Path
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -110,6 +112,34 @@ def seed_tickets(db: Session) -> None:
     db.commit()
 
 
+SEED_DIR = Path(__file__).parent / "seed_data"
+FOLDERS = {
+    "customer-policies": "Customer Policies",
+    "product-handbook": "Product Handbook",
+    "billing-operations": "Billing Operations",
+    "security-compliance": "Security & Compliance",
+}
+
+
+def seed_documents(db: Session, *, log=print) -> None:
+    """Upload every seed document and ingest it synchronously (no worker needed)."""
+    from app.models import DocumentVersion, VersionStatus
+    from app.services import ingestion, storage
+
+    storage.ensure_bucket()
+    admin = db.scalar(select(User).where(User.email == USERS[0][0]))
+    for folder, cname in FOLDERS.items():
+        collection = db.scalar(select(Collection).where(Collection.name == cname))
+        for path in sorted((SEED_DIR / folder).glob("*.md")):
+            _, version, created = ingestion.create_version(
+                db, collection=collection, filename=path.name, data=path.read_bytes(), user=admin
+            )
+            if created or db.get(DocumentVersion, version.id).status != VersionStatus.ready:
+                ingestion.process_version(version.id)
+                log(f"  ingested {cname} / {path.name}")
+
+
 def run(db: Session) -> None:
     seed_identity(db)
+    seed_documents(db)
     seed_tickets(db)

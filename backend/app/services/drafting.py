@@ -100,6 +100,24 @@ def record_call(
     draft_id: int | None = None,
     user_id: int | None = None,
 ) -> None:
+    tokens_in = result.input_tokens if result else 0
+    tokens_out = result.output_tokens if result else 0
+    log.info(
+        "llm call",
+        extra={
+            "event": "llm_call",
+            "purpose": purpose,
+            "provider": provider,
+            "model": model,
+            "status": status,
+            "latency_ms": latency_ms,
+            "input_tokens": tokens_in,
+            "output_tokens": tokens_out,
+            "cost_usd": float(result.cost) if result else 0.0,
+            "draft_id": draft_id,
+            "error": error,
+        },
+    )
     db.add(
         LLMCall(
             purpose=purpose,

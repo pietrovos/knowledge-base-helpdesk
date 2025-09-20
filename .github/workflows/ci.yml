@@ -44,6 +44,14 @@ jobs:
       - name: Test
         working-directory: backend
         run: uv run pytest --cov=app --cov-report=term-missing:skip-covered
+      - name: Eval regression gate (offline fakes)
+        working-directory: backend
+        run: uv run python -m evals.run --embedder fake --llm fake --gate --out eval-report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-report
+          path: backend/eval-report
 
   frontend:
     runs-on: ubuntu-latest

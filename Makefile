@@ -21,6 +21,9 @@ lint:
 	cd backend && uv run ruff check . && uv run ruff format --check .
 	cd frontend && npm run lint
 
+eval:          ## run the AI eval suite (free by default; ARGS="--llm anthropic --judge claude" for the real model)
+	docker compose exec api python -m evals.run $(ARGS)
+
 migrate:
 	docker compose exec api alembic upgrade head
 

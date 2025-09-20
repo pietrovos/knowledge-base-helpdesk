@@ -1,7 +1,7 @@
 import contextlib
 
 from celery import Celery
-from celery.signals import worker_ready
+from celery.signals import after_setup_logger, worker_ready
 
 from app.config import get_settings
 
@@ -36,3 +36,11 @@ def _start_heartbeat(**_) -> None:
             time.sleep(10)
 
     threading.Thread(target=beat, daemon=True, name="heartbeat").start()
+
+
+@after_setup_logger.connect
+def _json_logs(logger, **_) -> None:
+    from app.logging_setup import JsonFormatter
+
+    for h in logger.handlers:
+        h.setFormatter(JsonFormatter())

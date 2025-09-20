@@ -121,7 +121,8 @@ class LocalEmbedder:
     """fastembed (ONNX) model; runs on CPU with no API key. Default provider."""
 
     dim = 384
-    min_similarity = 0.6
+    # From the eval set: answerable questions score >= 0.66, unanswerable median 0.62.
+    min_similarity = 0.65
 
     def __init__(self, model_name: str) -> None:
         from fastembed import TextEmbedding

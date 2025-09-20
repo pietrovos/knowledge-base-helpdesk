@@ -245,11 +245,11 @@ class FakeLLM:
             )
         else:
             body = " ".join(
-                f"{text.rstrip('.')}. [{cid}]" if mode != "uncited" else f"{text.rstrip('.')}."
+                f"{text.rstrip('.')} [{cid}]." if mode != "uncited" else f"{text.rstrip('.')}."
                 for _, cid, text in best
             )
             if mode == "bad_citations":
-                body += " We also offer lifetime price matching. [999999999]"
+                body += " We also offer lifetime price matching [999999999]."
             out = DraftOutput(
                 status="answered",
                 missing_information="",

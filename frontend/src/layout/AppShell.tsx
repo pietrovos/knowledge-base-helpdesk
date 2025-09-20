@@ -20,6 +20,7 @@ const NAV: NavItem[] = [
   { to: '/collections', label: 'Knowledge' },
   { to: '/admin/users', label: 'Users', adminOnly: true },
   { to: '/admin/groups', label: 'Groups', adminOnly: true },
+  { to: '/admin/usage', label: 'Usage & cost', adminOnly: true },
   { to: '/admin/system', label: 'System', adminOnly: true },
 ]
 

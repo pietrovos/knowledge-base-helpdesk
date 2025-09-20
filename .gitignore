@@ -19,3 +19,4 @@ frontend/playwright-report/
 .env
 *.local
 .DS_Store
+backend/eval-report/

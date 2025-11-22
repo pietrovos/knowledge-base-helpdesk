@@ -11,12 +11,14 @@ import { EscalationsPage } from './pages/EscalationsPage'
 import { InboxPage } from './pages/InboxPage'
 import { KnowledgeGapsPage } from './pages/KnowledgeGapsPage'
 import { LoginPage } from './pages/LoginPage'
+import { RouteError } from './pages/RouteError'
 import { TicketPage } from './pages/TicketPage'
 
 export const routes = [
-  { path: '/login', element: <LoginPage /> },
+  { path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
   {
     element: <AppShell />,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <Navigate to="/tickets" replace /> },
       { path: 'tickets', element: <InboxPage /> },

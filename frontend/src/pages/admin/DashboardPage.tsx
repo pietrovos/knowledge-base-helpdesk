@@ -49,7 +49,7 @@ function StatTile({ label, value, note }: { label: string; value: string; note?:
   return (
     <Card className="p-4">
       <p className="text-sm text-[var(--viz-ink-2)]">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-[var(--viz-ink)]">{value}</p>
+      <p className="mt-1 text-xl font-semibold text-[var(--viz-ink)] sm:text-2xl">{value}</p>
       {note && <p className="mt-0.5 text-xs text-[var(--viz-muted)]">{note}</p>}
     </Card>
   )
@@ -82,7 +82,8 @@ export function DashboardPage() {
             aria-pressed={days === r}
             className={cx('rounded-md px-3 py-1.5 text-sm font-medium', days === r ? 'bg-white shadow-xs ring-1 ring-slate-200' : 'text-slate-600 hover:bg-slate-100')}
           >
-            Last {r} days
+            <span className="hidden sm:inline">Last </span>
+            {r} days
           </button>
         ))}
       </div>
@@ -92,7 +93,7 @@ export function DashboardPage() {
         <ErrorState error={q.error} onRetry={() => void q.refetch()} />
       ) : (
         <div className={cx('space-y-4 transition-opacity', q.isPlaceholderData && 'opacity-60')}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <StatTile label="Model calls" value={compact.format(q.data.totals.calls)} note={`${compact.format(q.data.totals.input_tokens)} in · ${compact.format(q.data.totals.output_tokens)} out tokens`} />
             <StatTile label="Model cost" value={usd(q.data.totals.cost_usd)} note={q.data.totals.calls ? `${usd(q.data.totals.cost_usd / q.data.totals.calls)} per call` : undefined} />
             <StatTile label="Generation latency p95" value={ms(q.data.totals.latency_p95_ms)} note={`p50 ${ms(q.data.totals.latency_p50_ms)}`} />

@@ -27,6 +27,6 @@ test('dashboard shows tiles, charts with legends, outcomes and a table view', as
   expect(screen.getByText(/No response within 50s/)).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Show table' }))
   expect(screen.getAllByRole('row')).toHaveLength(3)
-  await userEvent.click(screen.getByRole('button', { name: 'Last 30 days' }))
+  await userEvent.click(screen.getByRole('button', { name: /30 days/ }))
   await vi.waitFor(() => expect(calls.some((c) => c.path === '/metrics/overview?days=30')).toBe(true))
 })

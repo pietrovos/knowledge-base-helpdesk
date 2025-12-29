@@ -31,6 +31,9 @@ reset:         ## wipe the local database and reload the demo data
 eval:          ## run the AI eval suite (free by default; ARGS="--llm anthropic --judge claude" for the real model)
 	docker compose exec api python -m evals.run $(ARGS)
 
+e2e:           ## Playwright demo flow against the running stack (resets demo data first)
+	cd frontend && npx playwright test
+
 migrate:
 	docker compose exec api alembic upgrade head
 

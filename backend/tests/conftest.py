@@ -14,3 +14,9 @@ os.environ.update(
     S3_BUCKET=os.environ.get("TEST_S3_BUCKET", "supportlens-test"),
     REDIS_URL=os.environ.get("TEST_REDIS_URL", "redis://localhost:6379/15"),
 )
+for key, value in {
+    "S3_ENDPOINT_URL": "http://localhost:9000",
+    "S3_ACCESS_KEY": "supportlens",
+    "S3_SECRET_KEY": "supportlens-secret",
+}.items():
+    os.environ.setdefault(key, value)

@@ -61,6 +61,12 @@ def configure_env(args) -> None:
         hide_password=False
     )
     os.environ["S3_BUCKET"] = "supportlens-eval"
+    for key, value in {
+        "S3_ENDPOINT_URL": "http://localhost:9000",
+        "S3_ACCESS_KEY": "supportlens",
+        "S3_SECRET_KEY": "supportlens-secret",
+    }.items():
+        os.environ.setdefault(key, value)  # local MinIO when run outside compose
     os.environ["EMBEDDING_PROVIDER"] = args.embedder
     os.environ["LLM_PROVIDER"] = args.llm
     os.environ["FAKE_LLM_MODE"] = "ok"

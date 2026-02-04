@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { api } from '../api/client'
 import type { Draft } from '../api/types'
 import { stripCitations } from './citations'
+import { sectionLabel } from './format'
 import { Badge, Button, Card, InlineError, Textarea } from './ui'
 
 /** Agent edits the cited draft, then sends it. Citation markers are internal: the customer gets
@@ -30,7 +31,7 @@ export function PublishEditor({ draft, onClose }: { draft: Draft; onClose: () =>
       <Textarea rows={10} aria-label="Reply to send" value={text} onChange={(e) => setText(e.target.value)} />
       <div className="mt-2 text-xs text-slate-500">
         Based on {cited.length} cited passage{cited.length === 1 ? '' : 's'}:{' '}
-        {cited.map((s) => `${s.document_title}${s.heading ? ` › ${s.heading.split(' > ').at(-1)}` : ''}`).join(' · ')}
+        {cited.map((s) => `${s.document_title}${sectionLabel(s.document_title, s.heading) ? ` › ${sectionLabel(s.document_title, s.heading)}` : ''}`).join(' · ')}
         {edited && ' — check that your edits are still supported by these sources.'}
       </div>
       <div className="mt-3 flex flex-wrap justify-end gap-2">

@@ -20,3 +20,9 @@ frontend/playwright-report/
 *.local
 .DS_Store
 backend/eval-report/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars

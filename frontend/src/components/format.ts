@@ -14,3 +14,10 @@ export function bytes(n: number) {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
   return `${(n / 1024 / 1024).toFixed(1)} MB`
 }
+
+/** "Refund Policy > Exceptions" under the document "Refund Policy" displays as "Exceptions". */
+export function sectionLabel(documentTitle: string, heading: string) {
+  const parts = heading.split(' > ')
+  if (parts[0]?.trim().toLowerCase() === documentTitle.trim().toLowerCase()) parts.shift()
+  return parts.join(' › ')
+}

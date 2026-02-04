@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { ApiError, api } from '../api/client'
 import type { Evidence } from '../api/types'
 import { Badge, ErrorState, Loading } from './ui'
+import { sectionLabel } from './format'
 
 export function EvidenceDrawer({ draftId, chunkId, label, onClose }: { draftId: number; chunkId: number; label: number; onClose: () => void }) {
   const evidence = useQuery({
@@ -46,7 +47,7 @@ export function EvidenceDrawer({ draftId, chunkId, label, onClose }: { draftId: 
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                   <Badge>{evidence.data.collection_name}</Badge>
                   <span>v{evidence.data.source.version}</span>
-                  {evidence.data.source.heading && <span>› {evidence.data.source.heading}</span>}
+                  {sectionLabel(evidence.data.source.document_title, evidence.data.source.heading) && <span>› {sectionLabel(evidence.data.source.document_title, evidence.data.source.heading)}</span>}
                   {evidence.data.source.live ? <Badge tone="green">Current</Badge> : <Badge tone="amber">Retired since drafting</Badge>}
                   {evidence.data.source.similarity !== null && <span>similarity {evidence.data.source.similarity.toFixed(2)}</span>}
                 </div>

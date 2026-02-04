@@ -1,7 +1,7 @@
 .PHONY: reset up down logs test test-backend test-frontend lint migrate seed eval e2e check
 
 up:            ## start the full local stack
-	docker compose up -d --build
+	docker compose up -d --build --wait
 
 down:
 	docker compose down

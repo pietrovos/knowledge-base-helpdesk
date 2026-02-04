@@ -1,0 +1,49 @@
+name: Deploy
+
+# Manual only. Requires an AWS role trusted for GitHub OIDC (repository variable AWS_ROLE_ARN)
+# and the infrastructure in infra/aws applied once.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push images
+        run: |
+          TAG=${GITHUB_SHA::12}
+          REG=${{ steps.ecr.outputs.registry }}
+          docker build -f backend/Dockerfile.prod -t $REG/supportlens-api:$TAG backend
+          docker build -t $REG/supportlens-web:$TAG frontend
+          docker push $REG/supportlens-api:$TAG
+          docker push $REG/supportlens-web:$TAG
+          echo "TAG=$TAG" >> $GITHUB_ENV
+      - uses: hashicorp/setup-terraform@v3
+      - name: Migrate the database before any new code serves traffic
+        working-directory: infra/aws
+        run: |
+          VARS="-var image_tag=$TAG -var certificate_arn=${{ vars.ACM_CERTIFICATE_ARN }}"
+          terraform init -input=false
+          terraform apply -input=false -auto-approve $VARS -target=aws_ecs_task_definition.migrate
+          TASK=$(eval "$(terraform output -raw migrate_command) --query 'tasks[0].taskArn' --output text")
+          aws ecs wait tasks-stopped --cluster supportlens --tasks $TASK
+          CODE=$(aws ecs describe-tasks --cluster supportlens --tasks $TASK --query 'tasks[0].containers[0].exitCode')
+          test "$CODE" = "0"
+      - name: Roll out the services
+        working-directory: infra/aws
+        run: terraform apply -input=false -auto-approve -var image_tag=$TAG -var certificate_arn=${{ vars.ACM_CERTIFICATE_ARN }}

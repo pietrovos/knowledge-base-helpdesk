@@ -5,6 +5,7 @@ import { api } from '../api/client'
 import type { Draft, KnowledgeGap } from '../api/types'
 import { parseCitations } from './citations'
 import { EvidenceDrawer } from './EvidenceDrawer'
+import { sectionLabel } from './format'
 import { useSystemStatus } from './useSystemStatus'
 import { Badge, Button, Card, InlineError, Input, Spinner, cx } from './ui'
 
@@ -178,7 +179,7 @@ function Sources({ draft, labelOf, onOpen }: { draft: Draft; labelOf: Map<number
                 <span className={cx('mt-0.5 inline-flex min-w-5 justify-center rounded px-1 font-semibold', label ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600')}>{label ?? '–'}</span>
                 <span className="min-w-0">
                   <span className="font-medium text-slate-800">{s.document_title}</span>
-                  {s.heading && <span className="text-slate-500"> › {s.heading}</span>}
+                  {sectionLabel(s.document_title, s.heading) && <span className="text-slate-500"> › {sectionLabel(s.document_title, s.heading)}</span>}
                   {!s.live && <span className="text-amber-700"> · retired</span>}
                   <span className="block truncate text-slate-500">{s.accessible ? s.text : 'Restricted: you no longer have access to this collection'}</span>
                 </span>

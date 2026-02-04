@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { api } from '../api/client'
 import type { SearchResponse } from '../api/types'
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Loading } from './ui'
+import { sectionLabel } from './format'
 
 export function KnowledgeSearch() {
   const [input, setInput] = useState('')
@@ -48,7 +49,7 @@ export function KnowledgeSearch() {
                       <Link to={`/documents/${h.document_id}`} className="font-medium text-slate-700 hover:text-indigo-700">
                         {h.document_title}
                       </Link>
-                      {h.heading && <span>› {h.heading}</span>}
+                      {sectionLabel(h.document_title, h.heading) && <span>› {sectionLabel(h.document_title, h.heading)}</span>}
                       <Badge>{h.collection_name}</Badge>
                       {h.similarity !== null && <span>similarity {h.similarity.toFixed(2)}</span>}
                       {h.keyword_rank !== null && <span>keyword #{h.keyword_rank}</span>}

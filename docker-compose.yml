@@ -16,6 +16,7 @@ x-backend-env: &backend-env
   FAKE_LLM_MODE: ${FAKE_LLM_MODE:-ok}
   JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me-in-prod}
   HF_HOME: /models
+  PYTHONDONTWRITEBYTECODE: "1"  # the source tree is bind-mounted; keep root-owned .pyc files out of it
   FASTEMBED_CACHE_PATH: /models/fastembed
 
 services:

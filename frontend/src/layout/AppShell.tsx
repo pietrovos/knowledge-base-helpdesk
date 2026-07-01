@@ -81,7 +81,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-full">
-      <aside className="hidden w-60 shrink-0 flex-col gap-6 bg-slate-900 p-4 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-6 overflow-y-auto bg-slate-900 p-4 lg:flex">
         <Logo />
         {nav}
         {footer}

@@ -77,3 +77,50 @@ test('provider failure keeps the ticket usable', async () => {
   expect(await screen.findByTestId('draft-failed')).toHaveTextContent('The ticket is fully usable')
   expect(screen.getByRole('button', { name: 'Send reply' })).toBeInTheDocument()
 })
+
+test('a question draft can be cleared, discarding every unsent question draft', async () => {
+  const question = draft({ id: 12, custom_question: true, question: 'Do you ship to Brazil?' })
+  const olderQuestion = draft({ id: 11, custom_question: true, question: 'Older question' })
+  const ticketDraft = draft({ id: 9 })
+  let cleared = false
+  const { calls } = renderApp('/tickets/5', {
+    ...base,
+    'GET /tickets/5/drafts': () => (cleared ? [{ ...question, status: 'discarded' }, { ...olderQuestion, status: 'discarded' }, ticketDraft] : [question, olderQuestion, ticketDraft]),
+    'POST /drafts/12/discard': () => ((cleared = true), { ...question, status: 'discarded' }),
+    'POST /drafts/11/discard': { ...olderQuestion, status: 'discarded' },
+  })
+  const bar = await screen.findByTestId('question-bar')
+  expect(bar).toHaveTextContent('Do you ship to Brazil?')
+  expect(screen.getByRole('button', { name: 'Draft reply' })).toBeInTheDocument()
+  await userEvent.click(within(bar).getByRole('button', { name: 'Clear question' }))
+  await vi.waitFor(() => expect(screen.queryByTestId('question-bar')).not.toBeInTheDocument())
+  expect(calls.filter((c) => c.method === 'POST').map((c) => c.path).sort()).toEqual(['/drafts/11/discard', '/drafts/12/discard'])
+  expect(screen.getByRole('button', { name: 'Regenerate' })).toBeInTheDocument()
+})
+
+test('ask another opens an empty question box that can be cancelled', async () => {
+  const { calls } = renderApp('/tickets/5', {
+    ...base,
+    'GET /tickets/5/drafts': [draft({ id: 12, custom_question: true, question: 'Do you ship to Brazil?' })],
+    'POST /tickets/5/drafts': draft({ id: 13, status: 'pending' }),
+  })
+  await userEvent.click(within(await screen.findByTestId('question-bar')).getByRole('button', { name: 'Ask another' }))
+  const box = screen.getByLabelText('Question for the knowledge base')
+  expect(box).toHaveValue('')
+  expect(box).toHaveFocus()
+  await userEvent.keyboard('{Escape}')
+  expect(screen.queryByLabelText('Question for the knowledge base')).not.toBeInTheDocument()
+  expect(screen.getByTestId('question-bar')).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Ask another' }))
+  await userEvent.type(screen.getByLabelText('Question for the knowledge base'), 'Is there a student discount?')
+  await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+  await vi.waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ question: 'Is there a student discount?' }))
+})
+
+test('a sent question draft cannot be cleared', async () => {
+  renderApp('/tickets/5', { ...base, 'GET /tickets/5/drafts': [draft({ custom_question: true, status: 'published' })] })
+  const bar = await screen.findByTestId('question-bar')
+  expect(within(bar).queryByRole('button', { name: 'Clear question' })).not.toBeInTheDocument()
+  expect(within(bar).getByRole('button', { name: 'Ask another' })).toBeInTheDocument()
+})

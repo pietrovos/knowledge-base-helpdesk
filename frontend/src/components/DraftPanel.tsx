@@ -37,19 +37,35 @@ export function DraftPanel({ ticketId, onUseDraft }: { ticketId: number; onUseDr
   const system = useSystemStatus()
   const unavailable = system.data ? !system.data.drafting_available : false
 
+  // Clearing a question discards every unsent question draft on this ticket, so the panel goes
+  // back to the ticket's own draft rather than surfacing an older question.
+  const clear = useMutation({
+    mutationFn: () =>
+      Promise.all(
+        (drafts.data ?? [])
+          .filter((d) => d.custom_question && d.status !== 'discarded' && d.status !== 'published')
+          .map((d) => api(`/drafts/${d.id}/discard`, { method: 'POST' })),
+      ),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['tickets', ticketId, 'drafts'] }),
+  })
+  const openAsk = () => {
+    setQuestion('')
+    setAskOpen(true)
+  }
+
   return (
-    <Card className="p-4" >
+    <Card className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-semibold">Cited draft</h2>
           <p className="text-xs text-slate-500">Grounded only in knowledge you can access. Every claim links to its source.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setAskOpen((v) => !v)} disabled={busy || unavailable}>
+          <Button variant="secondary" size="sm" onClick={() => (askOpen ? setAskOpen(false) : openAsk())} disabled={busy || unavailable}>
             Ask a question
           </Button>
-          <Button size="sm" onClick={() => request.mutate(undefined)} loading={busy} disabled={busy || unavailable}>
-            {latest ? 'Regenerate' : 'Draft reply'}
+          <Button size="sm" onClick={() => request.mutate(undefined)} loading={busy && !latest?.custom_question} disabled={busy || unavailable}>
+            {latest && !latest.custom_question ? 'Regenerate' : 'Draft reply'}
           </Button>
         </div>
       </div>
@@ -60,8 +76,18 @@ export function DraftPanel({ ticketId, onUseDraft }: { ticketId: number; onUseDr
             e.preventDefault()
             if (question.trim()) request.mutate(question.trim())
           }}
+          onKeyDown={(e) => e.key === 'Escape' && setAskOpen(false)}
         >
-          <Input aria-label="Question for the knowledge base" placeholder="e.g. Can international orders be refunded?" value={question} onChange={(e) => setQuestion(e.target.value)} />
+          <Input
+            autoFocus
+            aria-label="Question for the knowledge base"
+            placeholder="e.g. Can international orders be refunded?"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+          />
+          <Button type="button" variant="ghost" size="sm" onClick={() => setAskOpen(false)}>
+            Cancel
+          </Button>
           <Button type="submit" size="sm" disabled={!question.trim() || busy}>
             Ask
           </Button>
@@ -72,7 +98,24 @@ export function DraftPanel({ ticketId, onUseDraft }: { ticketId: number; onUseDr
           AI drafting is paused: {system.data?.degraded_reasons[0]} You can still reply manually below.
         </p>
       )}
-      <InlineError error={request.error} />
+      {latest?.custom_question && !askOpen && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md bg-indigo-50 px-3 py-2 ring-1 ring-indigo-100" data-testid="question-bar">
+          <p className="min-w-0 text-sm text-slate-700">
+            <span className="text-slate-500">Answering your question:</span> “{latest.question}”
+          </p>
+          <div className="flex shrink-0 gap-2">
+            <Button size="sm" variant="secondary" onClick={openAsk} disabled={busy || unavailable}>
+              Ask another
+            </Button>
+            {latest.status !== 'published' && (
+              <Button size="sm" variant="ghost" onClick={() => clear.mutate()} loading={clear.isPending} disabled={latest.status === 'pending'}>
+                Clear question
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+      <InlineError error={request.error ?? clear.error} />
       {latest && !(unavailable && latest.status === 'failed') && <DraftView draft={latest} onUseDraft={onUseDraft} />}
     </Card>
   )
@@ -103,11 +146,6 @@ function DraftView({ draft, onUseDraft }: { draft: Draft; onUseDraft?: (d: Draft
 
   return (
     <div className="mt-4 space-y-4">
-      {draft.custom_question && (
-        <p className="text-xs text-slate-500">
-          Question: <span className="text-slate-700">“{draft.question}”</span>
-        </p>
-      )}
       {draft.status === 'insufficient_evidence' ? (
         <InsufficientEvidence draft={draft} />
       ) : (

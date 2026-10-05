@@ -1,9 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Runs against the docker compose stack (`make up`). The global setup resets it to the seed data.
+// Runs against the docker compose stack (`make up`). Setup and teardown reset it to the seed data.
 export default defineConfig({
   testDir: './e2e',
   globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
   timeout: 90_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
